@@ -1,7 +1,7 @@
 import { readFile, rename } from 'node:fs/promises'
 import type { Lang, Library, Mod, Settings } from '../../shared/types'
 import { atomicWrite, key } from './fsutil'
-import { BUNDLE_DIR_REL, isSharedTarget } from './paths'
+import { BUNDLE_DIR_REL, isSharedTarget, toTargetPath } from './paths'
 
 export function defaultLanguage(locale: string): Lang {
   return locale.toLowerCase().startsWith('en') ? 'en' : 'es'
@@ -66,6 +66,18 @@ export class LibraryStore {
         owners: parsed.owners ?? {},
         shared: parsed.shared ?? {}
       }
+      // La biblioteca es un archivo editable: nunca se confía en que un destino sea seguro. Se descartan los
+      // archivos cuya ruta se salga de fm_Data/StreamingAssets (por ejemplo con "..") o sea un ejecutable.
+      lib.mods = lib.mods
+        .filter((mod): mod is Mod => !!mod && typeof mod === 'object')
+        .map((mod) => ({
+          ...mod,
+          files: (Array.isArray(mod.files) ? mod.files : []).filter(
+            (f) => typeof f?.target === 'string' && typeof f?.source === 'string' && toTargetPath(f.target) === f.target
+          )
+        }))
+        .filter((mod) => mod.files.length > 0)
+
       // Bibliotecas de la 0.1: los catálogos activados quedaron con un solo dueño. Pasan a ser una pila de una capa.
       for (const [k, owner] of Object.entries(lib.owners)) {
         if (isSharedTarget(k) && !lib.shared[k]) lib.shared[k] = [owner]

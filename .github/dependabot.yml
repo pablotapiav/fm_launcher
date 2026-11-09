@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # Avisos y actualizaciones semanales de las dependencias de la aplicación
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  # ...y de las acciones de GitHub fijadas por commit en los flujos
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

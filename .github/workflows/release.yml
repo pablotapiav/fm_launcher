@@ -1,30 +1,46 @@
 name: Release
 
 # Se publica una versión nueva al subir una etiqueta, por ejemplo:
-#   git tag v0.1.0 && git push origin v0.1.0
+#   git tag v0.2.0 && git push origin v0.2.0
 on:
   push:
     tags: ['v*']
 
+# Por defecto, solo lectura; el permiso de escritura se da únicamente al trabajo que publica.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      # Las acciones están fijadas por commit (no por etiqueta) para que nadie pueda cambiarlas por debajo.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npm run typecheck
       - run: npm test
       - run: npm run dist
-      - uses: softprops/action-gh-release@v2
+      # Huellas SHA-256 para que cualquiera pueda comprobar que lo descargado es lo que se compiló aquí.
+      - name: Calcular SHA-256
+        shell: pwsh
+        working-directory: release
+        run: |
+          Get-FileHash FM-Launcher-Setup.exe, FM-Launcher-portable.exe -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" } |
+            Set-Content -Encoding ascii SHA256SUMS.txt
+          Get-Content SHA256SUMS.txt
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           files: |
             release/FM-Launcher-Setup.exe
             release/FM-Launcher-portable.exe
+            release/SHA256SUMS.txt
           generate_release_notes: true

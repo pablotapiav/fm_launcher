@@ -26,6 +26,17 @@ export interface ServiceOptions {
   gameVersion?: () => Promise<string | null>
 }
 
+const isAbsolutePath = (v: unknown): v is string => typeof v === 'string' && v.length < 1024 && path.isAbsolute(v)
+
+/** Qué valores acepta cada ajuste. */
+const SETTING_VALIDATORS: Record<keyof Settings, (v: unknown) => boolean> = {
+  language: (v) => v === 'es' || v === 'en',
+  gameDir: (v) => v === null || isAbsolutePath(v),
+  backupsEnabled: (v) => typeof v === 'boolean',
+  backupDir: (v) => v === null || isAbsolutePath(v),
+  introAcknowledged: (v) => typeof v === 'boolean'
+}
+
 const isInside = (child: string, parent: string): boolean => {
   const rel = path.relative(parent, child)
   return !!rel && !rel.startsWith('..') && !path.isAbsolute(rel)
@@ -258,6 +269,11 @@ export class LauncherService {
 
   setSettings(patch: Partial<Settings>): Promise<void> {
     return this.mutate(async () => {
+      // Solo se aceptan ajustes conocidos y con el tipo correcto (el valor llega desde la interfaz).
+      for (const [name, value] of Object.entries(patch ?? {})) {
+        const valid = Object.hasOwn(SETTING_VALIDATORS, name) && SETTING_VALIDATORS[name as keyof Settings](value)
+        if (!valid) throw new LauncherError({ code: 'IO', params: { detail: `ajuste no válido: ${name}` } })
+      }
       if (patch.gameDir) {
         const info = await inspectGameDir(patch.gameDir)
         if (!info) throw new LauncherError({ code: 'INVALID_GAME_DIR' })

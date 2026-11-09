@@ -79,6 +79,13 @@ Uninstalling the launcher does not delete that folder.
 **What about `.7z` and `.rar`?** They are read with Windows' own tools (`tar.exe`). `.zip` files are the
 best tested.
 
+## Security
+
+- The launcher doesn't connect to the internet on its own or send data, and it never runs anything from a mod.
+- The programs are **not code-signed**. To check that your download is the one built on GitHub, compare its hash with
+  `SHA256SUMS.txt` (on every Release): `Get-FileHash .FM-Launcher-Setup.exe -Algorithm SHA256`.
+- Found a vulnerability? Read [SECURITY.md](SECURITY.md) and report it privately.
+
 ## Feedback and bugs
 
 We appreciate your feedback! If you hit an error, write to us:

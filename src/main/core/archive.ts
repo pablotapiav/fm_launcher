@@ -45,10 +45,13 @@ async function extractZip(archive: string, dest: string): Promise<void> {
     const out = path.resolve(root, ...parts)
     if (!out.startsWith(root + path.sep)) continue // zip-slip: ruta que se sale del destino
 
-    total += entry.header.size
+    // Se mide lo realmente descomprimido, no lo que el archivo declara (una "bomba zip" puede mentir).
+    if (total + entry.header.size > MAX_TOTAL_BYTES) throw new Error('archive too large')
+    const data = entry.getData()
+    total += data.length
     if (total > MAX_TOTAL_BYTES) throw new Error('archive too large')
     await mkdir(path.dirname(out), { recursive: true })
-    await writeFile(out, entry.getData())
+    await writeFile(out, data)
   }
 }
 

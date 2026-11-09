@@ -83,7 +83,14 @@
     "electronLanguages": [
       "es",
       "en-US"
-    ]
+    ],
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "onlyLoadAppFromAsar": true
+    }
   },
   "repository": {
     "type": "git",

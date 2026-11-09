@@ -80,6 +80,13 @@ Desinstalar el launcher no borra esa carpeta.
 **¿Y los `.7z` y `.rar`?** Se leen con las herramientas de Windows (`tar.exe`). Los `.zip` son los mejor
 probados.
 
+## Seguridad
+
+- El launcher no se conecta a internet por su cuenta ni envía datos, y nunca ejecuta nada de un mod.
+- Los programas **no están firmados**. Para comprobar que tu descarga es la que se compiló en GitHub, compara su huella con
+  `SHA256SUMS.txt` (en cada Release): `Get-FileHash .FM-Launcher-Setup.exe -Algorithm SHA256`.
+- ¿Encontraste una vulnerabilidad? Lee [SECURITY.md](SECURITY.md) y repórtala en privado.
+
 ## Comentarios y errores
 
 ¡Agradecemos tus comentarios! Si tuviste un error, escríbenos:

@@ -1,7 +1,8 @@
-import { app, BrowserWindow, clipboard, dialog, ipcMain, session, shell } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, session, shell, type IpcMainInvokeEvent } from 'electron'
 import { existsSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { linkUrl, type LinkKind } from '../shared/links'
 import type { Lang, Result, Settings } from '../shared/types'
 import { LauncherError } from './core/errors'
@@ -36,11 +37,27 @@ async function pick(options: Electron.OpenDialogOptions): Promise<string[] | nul
   return res.canceled || res.filePaths.length === 0 ? null : res.filePaths
 }
 
-function registerIpc(): void {
-  ipcMain.handle('getState', () => service.getState())
-  ipcMain.handle('addPaths', (_e, paths: string[]) => wrap(() => service.addPaths(paths)))
+/** Solo la ventana de la propia aplicación (la página local empaquetada) puede llamar a los comandos. */
+function isTrustedSender(e: IpcMainInvokeEvent): boolean {
+  const url = e.senderFrame?.url ?? ''
+  const dev = process.env['ELECTRON_RENDERER_URL']
+  if (dev) return url.startsWith(dev)
+  return url.startsWith(pathToFileURL(path.join(__dirname, '../renderer')).href)
+}
 
-  ipcMain.handle('pickFiles', async () => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function handle(channel: string, fn: (e: IpcMainInvokeEvent, ...args: any[]) => unknown): void {
+  ipcMain.handle(channel, (e, ...args) => {
+    if (!isTrustedSender(e)) throw new Error('Remitente no autorizado')
+    return fn(e, ...args)
+  })
+}
+
+function registerIpc(): void {
+  handle('getState', () => service.getState())
+  handle('addPaths', (_e, paths: string[]) => wrap(() => service.addPaths(paths)))
+
+  handle('pickFiles', async () => {
     const paths = await pick({
       properties: ['openFile', 'multiSelections'],
       filters: [
@@ -50,18 +67,18 @@ function registerIpc(): void {
     })
     return paths ? wrap(() => service.addPaths(paths)) : null
   })
-  ipcMain.handle('pickFolder', async () => {
+  handle('pickFolder', async () => {
     const paths = await pick({ properties: ['openDirectory', 'multiSelections'] })
     return paths ? wrap(() => service.addPaths(paths)) : null
   })
 
-  ipcMain.handle('activate', (_e, id: string) => wrapVoid(() => service.activate(id)))
-  ipcMain.handle('deactivate', (_e, id: string) => wrapVoid(() => service.deactivate(id)))
-  ipcMain.handle('swapMod', (_e, id: string) => wrapVoid(() => service.swapMod(id)))
-  ipcMain.handle('removeMod', (_e, id: string) => wrapVoid(() => service.removeMod(id)))
-  ipcMain.handle('renameMod', (_e, id: string, name: string) => wrapVoid(() => service.renameMod(id, name)))
+  handle('activate', (_e, id: string) => wrapVoid(() => service.activate(id)))
+  handle('deactivate', (_e, id: string) => wrapVoid(() => service.deactivate(id)))
+  handle('swapMod', (_e, id: string) => wrapVoid(() => service.swapMod(id)))
+  handle('removeMod', (_e, id: string) => wrapVoid(() => service.removeMod(id)))
+  handle('renameMod', (_e, id: string, name: string) => wrapVoid(() => service.renameMod(id, name)))
 
-  ipcMain.handle('relocateFile', async (_e, id: string, target: string) => {
+  handle('relocateFile', async (_e, id: string, target: string) => {
     const paths = await pick({
       properties: ['openFile'],
       filters: [{ name: target.slice(target.lastIndexOf('/') + 1), extensions: ['*'] }]
@@ -69,35 +86,35 @@ function registerIpc(): void {
     return paths ? wrapVoid(() => service.relocateFile(id, target, paths[0])) : null
   })
 
-  ipcMain.handle('setSettings', (_e, patch: Partial<Settings>) => wrapVoid(() => service.setSettings(patch)))
+  handle('setSettings', (_e, patch: Partial<Settings>) => wrapVoid(() => service.setSettings(patch)))
 
-  ipcMain.handle('pickGameDir', async () => {
+  handle('pickGameDir', async () => {
     const paths = await pick({ properties: ['openDirectory'] })
     return paths ? wrapVoid(() => service.setSettings({ gameDir: paths[0] })) : null
   })
-  ipcMain.handle('pickBackupDir', async () => {
+  handle('pickBackupDir', async () => {
     const paths = await pick({ properties: ['openDirectory', 'createDirectory'] })
     return paths ? wrapVoid(() => service.setSettings({ backupDir: paths[0] })) : null
   })
-  ipcMain.handle('openBackupDir', async () => {
+  handle('openBackupDir', async () => {
     await mkdir(service.backupDir, { recursive: true })
     await shell.openPath(service.backupDir)
   })
 
-  ipcMain.handle('launchGame', () =>
+  handle('launchGame', () =>
     wrapVoid(async () => {
       const game = await service.getGame()
       if (!game) throw new LauncherError({ code: 'GAME_NOT_FOUND' })
       await shell.openExternal(`steam://rungameid/${game.appId}`)
     })
   )
-  ipcMain.handle('steamVerify', () => shell.openExternal(`steam://validate/${FM27_APP_ID}`))
+  handle('steamVerify', () => shell.openExternal(`steam://validate/${FM27_APP_ID}`))
 
-  ipcMain.handle('openLink', async (_e, kind: LinkKind) => {
+  handle('openLink', async (_e, kind: LinkKind) => {
     const url = linkUrl(kind)
     if (url) await shell.openExternal(url)
   })
-  ipcMain.handle('copyText', (_e, text: string) => clipboard.writeText(String(text).slice(0, 20000)))
+  handle('copyText', (_e, text: string) => clipboard.writeText(String(text).slice(0, 20000)))
 }
 
 /** Avisa a la interfaz cuando fm.exe se abre o se cierra. */
@@ -165,18 +182,9 @@ if (!app.requestSingleInstanceLock()) {
   void app.whenReady().then(async () => {
     app.setAppUserModelId('com.fmlauncher.app')
 
-    if (!process.env['ELECTRON_RENDERER_URL']) {
-      session.defaultSession.webRequest.onHeadersReceived((details, cb) => {
-        cb({
-          responseHeaders: {
-            ...details.responseHeaders,
-            'Content-Security-Policy': [
-              "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
-            ]
-          }
-        })
-      })
-    }
+    // La aplicación no necesita ningún permiso del navegador (cámara, micrófono, ubicación, notificaciones…).
+    session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false))
+    session.defaultSession.setPermissionCheckHandler(() => false)
 
     const userData = app.getPath('userData')
     const initialLanguage: Lang = defaultLanguage(app.getLocale())

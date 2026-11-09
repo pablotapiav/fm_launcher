@@ -16,7 +16,7 @@ Arrastra el `.zip` tal como lo descargaste, enciende el interruptor y juega.
 
 [![Descargar FM Launcher para Windows](https://img.shields.io/badge/%E2%AC%87%20Descargar-FM%20Launcher%20para%20Windows-ff2fa0?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/pablotapiav/fm_launcher/releases/latest/download/FM-Launcher-Setup.exe)
 
-Se instala con un clic y crea un acceso directo. Necesitas **Windows 10 u 11 (64 bits)** y **FM27 de Steam**.
+Se instala con un asistente sencillo, con barra de progreso, y crea un acceso directo. Puede tardar cerca de un minuto, porque la aplicación pesa unos 300 MB y el antivirus revisa cada archivo. Necesitas **Windows 10 u 11 (64 bits)** y **FM27 de Steam**.
 
 ¿Prefieres la versión **portable** (sin instalar) o ver las versiones anteriores? → **[Todas las versiones](../../releases)**
 

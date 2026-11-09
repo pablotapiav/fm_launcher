@@ -61,18 +61,29 @@
     },
     "icon": "build/icon.png",
     "nsis": {
-      "oneClick": true,
+      "oneClick": false,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": false,
+      "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "FM Launcher",
+      "runAfterFinish": true,
       "deleteAppDataOnUninstall": false,
+      "multiLanguageInstaller": true,
+      "installerLanguages": [
+        "es_ES",
+        "en_US"
+      ],
+      "displayLanguageSelector": false,
       "artifactName": "FM-Launcher-Setup.exe"
     },
     "portable": {
       "artifactName": "FM-Launcher-portable.exe"
-    }
+    },
+    "electronLanguages": [
+      "es",
+      "en-US"
+    ]
   },
   "repository": {
     "type": "git",

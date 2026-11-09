@@ -16,7 +16,7 @@ Drag the `.zip` just as you downloaded it, flip the switch and play.
 
 [![Download FM Launcher for Windows](https://img.shields.io/badge/%E2%AC%87%20Download-FM%20Launcher%20for%20Windows-ff2fa0?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/pablotapiav/fm_launcher/releases/latest/download/FM-Launcher-Setup.exe)
 
-It installs with one click and creates a shortcut. You need **Windows 10 or 11 (64-bit)** and **FM27 on Steam**.
+It installs with a simple wizard, with a progress bar, and creates a shortcut. It can take about a minute, because the app is around 300 MB and the antivirus scans every file. You need **Windows 10 or 11 (64-bit)** and **FM27 on Steam**.
 
 Prefer the **portable** version (no installation) or older versions? → **[All releases](../../releases)**
 

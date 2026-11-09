@@ -3,7 +3,7 @@ const { contextBridge } = require('electron')
 
 const AA = 'fm_Data/StreamingAssets/aa/StandaloneWindows64/'
 const AD = 'fm_Data/StreamingAssets/AddrData/'
-const base = { conflictsWith: [], blockedBy: [], catalogWith: [], compat: { state: 'unknown' } }
+const base = { conflictsWith: [], blockedBy: [], compat: { state: 'unknown' } }
 const file = (target, source, state = 'inactive') => ({
   source,
   target,
@@ -18,7 +18,7 @@ const state = {
   gameRunning: false,
   settings: { language: 'es', gameDir: null, backupsEnabled: true, backupDir: null, introAcknowledged: true },
   backupDir: 'C:\\x',
-  version: '0.1.0',
+  version: '0.2.0',
   mods: [
     {
       ...base,
@@ -36,9 +36,8 @@ const state = {
       name: 'Ejemplo: Vallas publicitarias',
       origin: 'vallas.zip',
       status: 'inactive',
-      tags: [{ id: 'adboards', group: 'media' }, { id: 'catalog', group: 'warn' }],
-      files: [file(AD + 'adboards_assets_all.bundle', 'C:\\Mods\\b.bundle'), file(AD + 'catalog_info.bin', 'C:\\Mods\\c.bin')],
-      catalogWith: ['Ejemplo: Botones de datos en partido']
+      tags: [{ id: 'adboards', group: 'media' }],
+      files: [file(AD + 'adboards_assets_all.bundle', 'C:\\Mods\\b.bundle'), file(AD + 'catalog_info.bin', 'C:\\Mods\\c.bin')]
     },
     {
       ...base,

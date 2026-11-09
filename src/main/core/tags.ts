@@ -28,7 +28,6 @@ const GROUPS: Record<string, Group> = {
   clubs: 'data',
   competitions: 'data',
   flags: 'data',
-  catalog: 'warn',
   core: 'warn'
 }
 
@@ -57,7 +56,8 @@ const FILE_RULES: [RegExp, string[]][] = [
   [/^ui-backgrounds/, ['ui', 'backgrounds']],
   [/^(ui-match|ui-prematch)/, ['ui', 'match-ui']],
   [/^ui-/, ['ui']],
-  [/^catalog_info/, ['catalog']],
+  // El catálogo lo trae casi todo mod con contenido nuevo: no dice nada del mod, así que no lleva etiqueta.
+  [/^catalog/, []],
   [/^gamemodules/, ['core']]
 ]
 

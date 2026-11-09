@@ -1,6 +1,6 @@
 {
   "name": "fm-launcher",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Launcher para Football Manager 27: activa y desactiva mods que reemplazan bundles.",
   "main": "./out/main/index.js",
   "license": "MIT",

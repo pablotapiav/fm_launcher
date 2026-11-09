@@ -40,11 +40,14 @@ Con el juego abierto no se pueden activar ni desactivar mods; el launcher te avi
 - **Reconoce el mod solo**, incluso dentro de un zip que copia la estructura del juego (`fm_Data/…`).
   Nunca ejecuta nada del zip: ignora scripts, instaladores y ejecutables.
 - **Respaldos automáticos** de los archivos originales (los puedes mover o desactivar en *Configuración*).
-- **Conflictos claros.** Dos mods que reemplazan el mismo archivo no pueden estar activos a la vez; el
-  launcher lo avisa y ofrece **Cambiar a este mod** en un solo paso.
+- **Conflictos claros, sin falsas alarmas.** Solo avisa cuando dos mods reemplazan el **mismo archivo de contenido**
+  (por ejemplo, dos packs de vallas que pisan el mismo bundle): no pueden estar activos a la vez, y el launcher
+  ofrece **Cambiar a este mod** en un solo paso. Mods de distintas competiciones o partes del juego conviven
+  sin avisos. Los archivos de catálogo del juego (`catalog_info.*`), que casi todo mod con contenido nuevo trae,
+  se comparten: gana el último activado y el original se repone solo al desactivar el último.
 - **Etiquetas inteligentes** según lo que cambia cada mod (Vallas, Audio, Interfaz, Estadio…) y filtros.
-- **Avisos de cuidado**: si un mod trae su propio catálogo del juego (suele romperse tras un parche) o fue
-  hecho para otra versión del juego.
+- **Compatibilidad de versión**: si las notas del mod dicen para qué versión del juego es, se compara solo la
+  versión base (`27.0.0`); un número de compilación distinto no cuenta como diferencia.
 - **Detecta cambios**: si Steam actualiza o restaura un archivo, el mod aparece como inactivo.
 - **Recuerda dónde está cada mod** y te avisa si lo moviste o lo borraste.
 - Interfaz en **español** e **inglés**.

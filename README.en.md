@@ -40,11 +40,14 @@ While the game is running you can't enable or disable mods; the launcher tells y
 - **Recognizes the mod by itself**, even inside a zip that mirrors the game's structure (`fm_Data/…`).
   It never runs anything from the zip: scripts, installers and executables are ignored.
 - **Automatic backups** of the original files (you can move or turn them off in *Settings*).
-- **Clear conflicts.** Two mods that replace the same file can't be active at once; the launcher warns you
-  and offers **Switch to this mod** in one step.
+- **Clear conflicts, no false alarms.** It only warns when two mods replace the **same content file**
+  (for example, two adboard packs that overwrite the same bundle): they can't be active at once, and the
+  launcher offers **Switch to this mod** in one step. Mods for different competitions or parts of the game
+  coexist with no warnings. The game catalog files (`catalog_info.*`), which almost every mod with new content
+  ships, are shared: the last one enabled wins and the original is restored when the last one is disabled.
 - **Smart tags** based on what each mod changes (Adboards, Audio, Interface, Stadium…) with filters.
-- **Heads-up notes**: if a mod ships its own game catalog (it tends to break after a patch) or was made for
-  another game version.
+- **Version compatibility**: if the mod's notes say which game version it is for, only the base version
+  (`27.0.0`) is compared; a different build number doesn't count as a difference.
 - **Detects changes**: if Steam updates or restores a file, the mod shows as inactive.
 - **Remembers where each mod is** and tells you if you moved or deleted it.
 - Interface in **Spanish** and **English**.

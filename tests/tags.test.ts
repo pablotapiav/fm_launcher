@@ -13,7 +13,7 @@ const mod = (name: string, targets: string[], origin?: string) => ({
 const ids = (m: ReturnType<typeof mod>): string[] => computeTags(m).map((t) => t.id)
 
 describe('etiquetas inteligentes', () => {
-  it('detecta vallas publicitarias y avisa del catálogo (el mod real de ADBOARDS)', () => {
+  it('detecta vallas publicitarias y no etiqueta el catálogo (el mod real de ADBOARDS)', () => {
     const tags = computeTags(
       mod('ADBOARDS FM 27 CHILE & CONMEBOL', [
         `${AD}/adboards_assets_all.bundle`,
@@ -21,10 +21,7 @@ describe('etiquetas inteligentes', () => {
         `${AD}/catalog_info.hash`
       ])
     )
-    expect(tags).toEqual([
-      { id: 'adboards', group: 'media' },
-      { id: 'catalog', group: 'warn' }
-    ])
+    expect(tags).toEqual([{ id: 'adboards', group: 'media' }])
   })
 
   it('un mod de interfaz de partido', () => {
@@ -49,7 +46,7 @@ describe('etiquetas inteligentes', () => {
     expect(ids(mod('Datos', [`${AD}/players-eng_assets_all.bundle`, `${AD}/club-eng_assets_all.bundle`, `${AD}/comp-eng_assets_all.bundle`]))).toEqual(['players', 'clubs', 'competitions'])
   })
 
-  it('combina varias etiquetas y deja los avisos al final', () => {
+  it('combina varias etiquetas sin etiquetar el catálogo', () => {
     const tags = ids(
       mod('Pack completo', [
         `${AD}/catalog_info.bin`,
@@ -58,7 +55,7 @@ describe('etiquetas inteligentes', () => {
         `${AA}/ui-fonts_assets_all.bundle`
       ])
     )
-    expect(tags).toEqual(['adboards', 'audio', 'ui', 'fonts', 'catalog'])
+    expect(tags).toEqual(['adboards', 'audio', 'ui', 'fonts'])
   })
 
   it('si los archivos no dicen nada, usa el nombre del mod o del zip', () => {

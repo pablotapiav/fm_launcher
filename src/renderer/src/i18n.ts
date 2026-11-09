@@ -74,9 +74,7 @@ const es = {
   'tag.clubs': 'Clubes',
   'tag.competitions': 'Competiciones',
   'tag.flags': 'Banderas',
-  'tag.catalog': 'Catálogo',
   'tag.core': 'Núcleo',
-  'tag.hint.catalog': 'Reemplaza archivos del catálogo del juego. Suele romperse tras un parche.',
   'tag.hint.core': 'Reemplaza módulos centrales del juego. Es delicado tras un parche.',
 
   'status.active': 'Activo',
@@ -99,8 +97,6 @@ const es = {
   'mod.conflictActive': 'Conflicto: {mods} está activo y reemplaza el mismo archivo. Solo uno puede estar activo.',
   'mod.swap': 'Cambiar a este mod',
   'mod.swapHint': 'Desactiva {mods} y activa este.',
-  'mod.catalogWarn':
-    'Trae su propio catálogo del juego: puede no combinar con otros mods activos ({mods}) aunque no compartan archivos.',
   'mod.compatOk': 'Para tu versión',
   'mod.compatOkHint': 'El mod declara la misma versión del juego que tienes ({current}).',
   'mod.compatCloseHint':
@@ -247,9 +243,7 @@ const en: Record<Key, string> = {
   'tag.clubs': 'Clubs',
   'tag.competitions': 'Competitions',
   'tag.flags': 'Flags',
-  'tag.catalog': 'Catalog',
   'tag.core': 'Core',
-  'tag.hint.catalog': 'Replaces game catalog files. Often breaks after a patch.',
   'tag.hint.core': 'Replaces core game modules. Sensitive after a patch.',
 
   'status.active': 'Active',
@@ -272,8 +266,6 @@ const en: Record<Key, string> = {
   'mod.conflictActive': 'Conflict: {mods} is active and replaces the same file. Only one can be active.',
   'mod.swap': 'Switch to this mod',
   'mod.swapHint': 'Disables {mods} and enables this one.',
-  'mod.catalogWarn':
-    'It ships its own game catalog: it may not combine with other active mods ({mods}) even if they share no files.',
   'mod.compatOk': 'For your version',
   'mod.compatOkHint': 'The mod declares the same game version you have ({current}).',
   'mod.compatCloseHint':

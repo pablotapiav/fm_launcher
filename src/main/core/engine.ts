@@ -9,11 +9,12 @@ import type {
   ModCompat,
   ModFile,
   ModStatus,
-  ModView
+  ModView,
+  OwnerRecord
 } from '../../shared/types'
 import { LauncherError } from './errors'
 import { atomicCopy, exists, hashFile, key } from './fsutil'
-import { targetAbs, targetName } from './paths'
+import { isSharedTarget, targetAbs, targetName } from './paths'
 import { findInGame } from './resolve'
 import { computeTags } from './tags'
 
@@ -26,14 +27,38 @@ export interface EngineContext {
 
 const gamePath = (game: GameInfo, file: ModFile): string => targetAbs(game.gameDir, file.target)
 const backupPathFor = (backupDir: string, target: string): string => path.join(backupDir, ...target.split('/'))
+const layersOf = (lib: Library, k: string): OwnerRecord[] => lib.shared[k] ?? []
 
-/** El estado se lee siempre del disco: un archivo está activo si su hash coincide con el que dejó el launcher. */
-async function isFileActive(lib: Library, game: GameInfo, mod: Mod, file: ModFile): Promise<boolean> {
+/**
+ * El archivo del juego sigue siendo el que dejó el launcher (el mismo hash que registró).
+ * Para archivos compartidos es el del mod que está arriba de la pila.
+ */
+async function topIsIntact(lib: Library, game: GameInfo, file: ModFile): Promise<boolean> {
   const owner = lib.owners[key(file.target)]
-  if (!owner || owner.modId !== mod.id) return false
+  if (!owner) return false
   const tp = gamePath(game, file)
   if (!(await exists(tp))) return false
   return (await hashFile(tp)) === owner.hash
+}
+
+/** El estado se lee siempre del disco: un archivo está activo si su hash coincide con el que dejó el launcher. */
+async function isFileActive(lib: Library, game: GameInfo, mod: Mod, file: ModFile): Promise<boolean> {
+  const k = key(file.target)
+  if (isSharedTarget(file.target)) {
+    // Un mod con catálogo propio está activo mientras siga en la pila y el archivo no haya sido repuesto.
+    if (!layersOf(lib, k).some((l) => l.modId === mod.id)) return false
+    return topIsIntact(lib, game, file)
+  }
+  const owner = lib.owners[k]
+  if (!owner || owner.modId !== mod.id) return false
+  return topIsIntact(lib, game, file)
+}
+
+/** Hash con el que el launcher aplicó el archivo de este mod (para saber si el mod cambió después). */
+function appliedHash(lib: Library, mod: Mod, file: ModFile): string | undefined {
+  const k = key(file.target)
+  if (isSharedTarget(file.target)) return layersOf(lib, k).find((l) => l.modId === mod.id)?.hash
+  return lib.owners[k]?.hash
 }
 
 export async function buildViews(lib: Library, game: GameInfo | null): Promise<ModView[]> {
@@ -46,7 +71,7 @@ export async function buildViews(lib: Library, game: GameInfo | null): Promise<M
       const active = game ? await isFileActive(lib, game, mod, f) : false
       let outdated = false
       if (active && sourceExists) {
-        outdated = (await hashFile(f.source)) !== lib.owners[key(f.target)].hash
+        outdated = (await hashFile(f.source)) !== appliedHash(lib, mod, f)
       }
       files.push({
         source: f.source,
@@ -72,29 +97,21 @@ export async function buildViews(lib: Library, game: GameInfo | null): Promise<M
       files,
       conflictsWith: [],
       blockedBy: [],
-      catalogWith: [],
       compat: computeCompat(mod.declared, game)
     })
   }
 
+  // Conflicto = dos mods que reemplazan el mismo archivo de contenido. Los archivos compartidos
+  // (catálogo) no cuentan: conviven.
   for (const v of views) {
-    const mine = new Set(v.files.map((f) => key(f.target)))
+    const mine = new Set(v.files.filter((f) => !isSharedTarget(f.target)).map((f) => key(f.target)))
     for (const other of views) {
       if (other.id === v.id) continue
-      const shared = other.files.filter((f) => mine.has(key(f.target)))
-      if (shared.length === 0) continue
+      const clash = other.files.filter((f) => mine.has(key(f.target)))
+      if (clash.length === 0) continue
       v.conflictsWith.push({ id: other.id, name: other.name })
-      if (shared.some((f) => f.state === 'active')) v.blockedBy.push({ id: other.id, name: other.name })
+      if (clash.some((f) => f.state === 'active')) v.blockedBy.push({ id: other.id, name: other.name })
     }
-  }
-
-  // Un mod con su propio catálogo puede no combinar con otros mods activos aunque no compartan archivos.
-  for (const v of views) {
-    if (!v.tags.some((tag) => tag.id === 'catalog')) continue
-    const blocked = new Set(v.blockedBy.map((b) => b.id))
-    v.catalogWith = views
-      .filter((o) => o.id !== v.id && !blocked.has(o.id) && (o.status === 'active' || o.status === 'partial'))
-      .map((o) => o.name)
   }
   return views
 }
@@ -149,6 +166,77 @@ async function dropBackup(lib: Library, k: string): Promise<void> {
   }
 }
 
+/** Guarda lo que hay ahora en el juego como "original" (o anota que el archivo no existía). */
+async function backUpOriginal(
+  lib: Library,
+  ctx: EngineContext,
+  game: GameInfo,
+  f: ModFile,
+  present: boolean,
+  current: string | null
+): Promise<void> {
+  const k = key(f.target)
+  if (!present) {
+    // Archivo nuevo: al revertir simplemente se borra.
+    lib.backups[k] = { target: f.target, path: '', existed: false, hash: '', buildId: game.buildId, time: Date.now() }
+  } else if (ctx.backupsEnabled) {
+    const backupPath = backupPathFor(ctx.backupDir, f.target)
+    await atomicCopy(gamePath(game, f), backupPath)
+    const record: BackupRecord = {
+      target: f.target,
+      path: backupPath,
+      existed: true,
+      hash: current as string,
+      buildId: game.buildId,
+      time: Date.now()
+    }
+    lib.backups[k] = record
+  } else {
+    // Un respaldo anterior ya no corresponde a lo que hay ahora en el juego.
+    await dropBackup(lib, k)
+  }
+}
+
+/** Un mod de la pila puede reponerse si su archivo de origen sigue existiendo. */
+async function layerSource(lib: Library, layer: OwnerRecord, k: string): Promise<ModFile | null> {
+  const mod = lib.mods.find((m) => m.id === layer.modId)
+  const file = mod?.files.find((f) => key(f.target) === k)
+  return file && (await exists(file.source)) ? file : null
+}
+
+/**
+ * Quita a un mod de la pila de un archivo compartido. Si era el de arriba, deja puesto el del mod
+ * siguiente (se descartan los que ya no tienen su archivo). Devuelve "empty" cuando no queda ninguno:
+ * ahí quien llama debe reponer el original.
+ */
+async function removeSharedLayer(lib: Library, game: GameInfo, k: string, modId: string): Promise<'empty' | 'kept'> {
+  let layers = layersOf(lib, k).filter((l) => l.modId !== modId)
+  const wasTop = lib.owners[k]?.modId === modId
+
+  if (wasTop) {
+    while (layers.length > 0) {
+      const top = layers[layers.length - 1]
+      const file = await layerSource(lib, top, k)
+      if (file) {
+        const tp = gamePath(game, file)
+        await atomicCopy(file.source, tp)
+        top.hash = await hashFile(tp)
+        top.time = Date.now()
+        lib.owners[k] = { ...top }
+        break
+      }
+      layers = layers.slice(0, -1)
+    }
+  }
+
+  if (layers.length === 0) {
+    delete lib.shared[k]
+    return 'empty'
+  }
+  lib.shared[k] = layers
+  return 'kept'
+}
+
 /**
  * Aplica un mod: respalda los originales (si hay respaldos activados) y copia los archivos del mod.
  * Modifica `lib`; quien llama debe guardarla siempre, incluso si hubo error.
@@ -175,9 +263,10 @@ export async function activateMod(lib: Library, modId: string, ctx: EngineContex
     throw new LauncherError({ code: 'TARGET_MISSING', params: { files: missingTargets.join(', ') } })
   }
 
-  // Conflictos: otro mod que sigue aplicado sobre alguno de los mismos archivos.
+  // Conflictos: otro mod que sigue aplicado sobre alguno de los mismos archivos de contenido.
   const blockers = new Set<string>()
   for (const f of mod.files) {
+    if (isSharedTarget(f.target)) continue
     const owner = lib.owners[key(f.target)]
     if (!owner || owner.modId === mod.id) continue
     const other = lib.mods.find((m) => m.id === owner.modId)
@@ -196,29 +285,27 @@ export async function activateMod(lib: Library, modId: string, ctx: EngineContex
       const owner = lib.owners[k]
       const present = await exists(tp)
       const current = present ? await hashFile(tp) : null
-      const alreadyOurs = present && owner?.modId === mod.id && owner.hash === current
 
-      if (!alreadyOurs) {
-        if (!present) {
-          // Archivo nuevo: al revertir simplemente se borra.
-          lib.backups[k] = { target: f.target, path: '', existed: false, hash: '', buildId: game.buildId, time: Date.now() }
-        } else if (ctx.backupsEnabled) {
-          const backupPath = backupPathFor(ctx.backupDir, f.target)
-          await atomicCopy(tp, backupPath)
-          const record: BackupRecord = {
-            target: f.target,
-            path: backupPath,
-            existed: true,
-            hash: current as string,
-            buildId: game.buildId,
-            time: Date.now()
-          }
-          lib.backups[k] = record
-        } else {
-          // Un respaldo anterior ya no corresponde a lo que hay ahora en el juego.
-          await dropBackup(lib, k)
+      if (isSharedTarget(f.target)) {
+        // Archivo compartido: se apila sobre los demás mods; el original se guarda solo la primera vez.
+        let layers = layersOf(lib, k)
+        const stackIntact = layers.length > 0 && !!owner && present && current === owner.hash
+        if (!stackIntact) {
+          // Nadie lo tiene puesto (o Steam lo repuso): se empieza de cero con lo que hay ahora.
+          layers = []
+          delete lib.shared[k]
+          await backUpOriginal(lib, ctx, game, f, present, current)
         }
+        await atomicCopy(f.source, tp)
+        touched.push(k)
+        const record: OwnerRecord = { modId: mod.id, hash: await hashFile(tp), time: Date.now() }
+        lib.shared[k] = [...layers.filter((l) => l.modId !== mod.id), record]
+        lib.owners[k] = { ...record }
+        continue
       }
+
+      const alreadyOurs = present && owner?.modId === mod.id && owner.hash === current
+      if (!alreadyOurs) await backUpOriginal(lib, ctx, game, f, present, current)
 
       await atomicCopy(f.source, tp)
       touched.push(k)
@@ -227,9 +314,14 @@ export async function activateMod(lib: Library, modId: string, ctx: EngineContex
   } catch (err) {
     // Deshace lo ya copiado usando los respaldos hechos en esta operación.
     for (const k of touched) {
-      const rec = lib.backups[k]
       const f = mod.files.find((x) => key(x.target) === k)
-      if (!rec || !f) continue
+      if (!f) continue
+      if (isSharedTarget(f.target)) {
+        const outcome = await removeSharedLayer(lib, game, k, mod.id).catch(() => 'kept' as const)
+        if (outcome === 'kept') continue
+      }
+      const rec = lib.backups[k]
+      if (!rec) continue
       if (rec.existed === false) await rm(gamePath(game, f), { force: true }).catch(() => undefined)
       else if (await exists(rec.path)) await atomicCopy(rec.path, gamePath(game, f)).catch(() => undefined)
       else continue
@@ -239,17 +331,67 @@ export async function activateMod(lib: Library, modId: string, ctx: EngineContex
   }
 }
 
+interface PlanItem {
+  k: string
+  file: ModFile
+  /** Respaldo validado para reponer el original; null si el archivo sigue en uso por otro mod. */
+  rec: BackupRecord | null
+  shared: boolean
+}
+
 /** Revierte un mod restaurando los originales respaldados (y borrando los archivos que el mod añadió). */
 export async function deactivateMod(lib: Library, modId: string, ctx: EngineContext): Promise<void> {
   const game = await assertCanWrite(ctx)
   const mod = findMod(lib, modId)
 
-  const plan: { k: string; file: ModFile; rec: BackupRecord }[] = []
+  const plan: PlanItem[] = []
   const noBackup: string[] = []
   const buildChanged: string[] = []
 
+  /** Comprueba que el respaldo sirve para reponer el original y lo deja en el plan. */
+  const planRestore = async (k: string, f: ModFile, shared: boolean): Promise<void> => {
+    const rec = lib.backups[k]
+    if (rec && rec.existed === false) {
+      plan.push({ k, file: f, rec, shared })
+    } else if (!rec || !(await exists(rec.path)) || (await hashFile(rec.path)) !== rec.hash) {
+      noBackup.push(targetName(f.target))
+    } else if (rec.buildId && game.buildId && rec.buildId !== game.buildId) {
+      buildChanged.push(targetName(f.target))
+    } else {
+      plan.push({ k, file: f, rec, shared })
+    }
+  }
+
   for (const f of mod.files) {
     const k = key(f.target)
+
+    if (isSharedTarget(f.target)) {
+      const layers = layersOf(lib, k)
+      if (!layers.some((l) => l.modId === mod.id)) continue
+      if (!(await topIsIntact(lib, game, f))) {
+        // Steam (u otro programa) ya repuso el archivo: ninguna capa sigue puesta.
+        delete lib.shared[k]
+        delete lib.owners[k]
+        await dropBackup(lib, k)
+        continue
+      }
+      const remaining = layers.filter((l) => l.modId !== mod.id)
+      const wasTop = lib.owners[k]?.modId === mod.id
+      let willEmpty = remaining.length === 0
+      if (!willEmpty && wasTop) {
+        willEmpty = true
+        for (const layer of remaining) {
+          if (await layerSource(lib, layer, k)) {
+            willEmpty = false
+            break
+          }
+        }
+      }
+      if (willEmpty) await planRestore(k, f, true)
+      else plan.push({ k, file: f, rec: null, shared: true })
+      continue
+    }
+
     const owner = lib.owners[k]
     if (!owner || owner.modId !== mod.id) continue
 
@@ -259,17 +401,7 @@ export async function deactivateMod(lib: Library, modId: string, ctx: EngineCont
       await dropBackup(lib, k)
       continue
     }
-
-    const rec = lib.backups[k]
-    if (rec && rec.existed === false) {
-      plan.push({ k, file: f, rec })
-    } else if (!rec || !(await exists(rec.path)) || (await hashFile(rec.path)) !== rec.hash) {
-      noBackup.push(targetName(f.target))
-    } else if (rec.buildId && game.buildId && rec.buildId !== game.buildId) {
-      buildChanged.push(targetName(f.target))
-    } else {
-      plan.push({ k, file: f, rec })
-    }
+    await planRestore(k, f, false)
   }
 
   if (noBackup.length) {
@@ -287,8 +419,11 @@ export async function deactivateMod(lib: Library, modId: string, ctx: EngineCont
     })
   }
 
-  for (const { k, file, rec } of plan) {
+  for (const { k, file, rec, shared } of plan) {
     try {
+      if (shared && (await removeSharedLayer(lib, game, k, mod.id)) === 'kept') continue
+      // Ya no queda ningún mod sobre el archivo: se repone el original.
+      if (!rec) continue
       if (rec.existed === false) await rm(gamePath(game, file), { force: true })
       else await atomicCopy(rec.path, gamePath(game, file))
     } catch (err) {

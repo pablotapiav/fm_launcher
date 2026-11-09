@@ -30,6 +30,16 @@ export function toTargetPath(rel: string): string | null {
   return norm
 }
 
+/**
+ * Archivos del catálogo del juego. Casi todos los mods con contenido nuevo traen su propia copia, y en la
+ * práctica conviven: no se tratan como conflicto. Si varios mods los traen, gana el último activado.
+ */
+const SHARED_NAMES = new Set(['catalog_info.bin', 'catalog_info.hash', 'catalog.bin', 'catalog.hash'])
+
+export function isSharedTarget(target: string): boolean {
+  return SHARED_NAMES.has(targetName(target).toLowerCase())
+}
+
 export function targetAbs(gameDir: string, target: string): string {
   return path.join(gameDir, ...target.split('/'))
 }

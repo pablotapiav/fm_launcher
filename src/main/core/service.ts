@@ -210,6 +210,11 @@ export class LauncherService {
       for (const [k, owner] of Object.entries(this.lib.owners)) {
         if (owner.modId === modId) delete this.lib.owners[k]
       }
+      for (const [k, layers] of Object.entries(this.lib.shared)) {
+        const rest = layers.filter((l) => l.modId !== modId)
+        if (rest.length) this.lib.shared[k] = rest
+        else delete this.lib.shared[k]
+      }
       await this.cleanupExtracted(mod)
     })
   }

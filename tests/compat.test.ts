@@ -60,8 +60,8 @@ afterEach(async () => {
 
 describe('cambiar a este mod', () => {
   async function twoConflicting(svc: LauncherService): Promise<[string, string]> {
-    await svc.addPaths([await makeZip('A.zip', { 'a/fm_Data/StreamingAssets/AddrData/catalog_info.bin': 'MOD-A' })])
-    await svc.addPaths([await makeZip('B.zip', { 'b/fm_Data/StreamingAssets/AddrData/catalog_info.bin': 'MOD-B' })])
+    await svc.addPaths([await makeZip('A.zip', { 'a/fm_Data/StreamingAssets/AddrData/adboards_assets_all.bundle': 'MOD-A' })])
+    await svc.addPaths([await makeZip('B.zip', { 'b/fm_Data/StreamingAssets/AddrData/adboards_assets_all.bundle': 'MOD-B' })])
     const [a, b] = (await svc.getState()).mods
     return [a.id, b.id]
   }
@@ -75,11 +75,11 @@ describe('cambiar a este mod', () => {
     const state = await svc.getState()
     expect(state.mods.find((m) => m.id === a)?.status).toBe('inactive')
     expect(state.mods.find((m) => m.id === b)?.status).toBe('active')
-    expect(await readGame(`${ADDR}/catalog_info.bin`)).toBe('MOD-B')
+    expect(await readGame(`${ADDR}/adboards_assets_all.bundle`)).toBe('MOD-B')
 
     // Y el original sigue a salvo: al desactivar el nuevo se recupera.
     await svc.deactivate(b)
-    expect(await readGame(`${ADDR}/catalog_info.bin`)).toBe('ORIG-CATALOG')
+    expect(await readGame(`${ADDR}/adboards_assets_all.bundle`)).toBe('ORIG-AD')
   })
 
   it('si nada choca, simplemente activa', async () => {
@@ -100,9 +100,9 @@ describe('cambiar a este mod', () => {
 
     const state = await svc.getState()
     expect(state.mods.find((m) => m.id === a)?.status).toBe('active')
-    expect(await readGame(`${ADDR}/catalog_info.bin`)).toBe('MOD-A')
+    expect(await readGame(`${ADDR}/adboards_assets_all.bundle`)).toBe('MOD-A')
     await svc.deactivate(a)
-    expect(await readGame(`${ADDR}/catalog_info.bin`)).toBe('ORIG-CATALOG')
+    expect(await readGame(`${ADDR}/adboards_assets_all.bundle`)).toBe('ORIG-AD')
   })
 
   it('no hace nada con el juego abierto', async () => {
@@ -116,34 +116,11 @@ describe('cambiar a este mod', () => {
       gameVersion: async () => gameVersion
     })
     await svc.setSettings({ gameDir })
-    await svc.addPaths([await makeZip('C.zip', { 'c/fm_Data/StreamingAssets/AddrData/catalog_info.bin': 'MOD-C' })])
+    await svc.addPaths([await makeZip('C.zip', { 'c/fm_Data/StreamingAssets/AddrData/adboards_assets_all.bundle': 'MOD-C' })])
     const id = (await svc.getState()).mods[0].id
     running = true
     await expect(svc.swapMod(id)).rejects.toMatchObject({ info: { code: 'GAME_RUNNING' } })
-    expect(await readGame(`${ADDR}/catalog_info.bin`)).toBe('ORIG-CATALOG')
-  })
-})
-
-describe('aviso de catálogo propio', () => {
-  it('avisa en el mod con catálogo cuando hay otros mods activos sin conflicto de archivos', async () => {
-    const svc = await makeService()
-    await svc.addPaths([
-      await makeZip('vallas.zip', {
-        'v/fm_Data/StreamingAssets/AddrData/adboards_assets_all.bundle': 'AD',
-        'v/fm_Data/StreamingAssets/AddrData/catalog_info.bin': 'CAT'
-      })
-    ])
-    await svc.addPaths([await makeZip('ui.zip', { 'files/ui-match.bundle': 'UI' })])
-    const [vallas, ui] = (await svc.getState()).mods
-
-    // Sin otros mods activos, no hay nada que advertir.
-    expect(vallas.catalogWith).toEqual([])
-
-    await svc.activate(ui.id)
-    const after = (await svc.getState()).mods
-    expect(after.find((m) => m.id === vallas.id)?.catalogWith).toEqual([ui.name])
-    // Los mods sin catálogo propio no llevan este aviso.
-    expect(after.find((m) => m.id === ui.id)?.catalogWith).toEqual([])
+    expect(await readGame(`${ADDR}/adboards_assets_all.bundle`)).toBe('ORIG-AD')
   })
 })
 

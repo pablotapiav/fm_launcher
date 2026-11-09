@@ -107,7 +107,7 @@ export default function ModCard({
               <span
                 key={tag.id}
                 className={`tag g-${tag.group}`}
-                title={tag.group === 'warn' ? t(`tag.hint.${tag.id}` as 'tag.hint.catalog') : undefined}
+                title={tag.group === 'warn' ? t(`tag.hint.${tag.id}` as 'tag.hint.core') : undefined}
               >
                 {tag.group === 'warn' && <Icon name="alert" size={11} />}
                 {t(`tag.${tag.id}` as 'tag.ui')}
@@ -130,11 +130,6 @@ export default function ModCard({
               <Icon name="refresh" size={13} /> {t('mod.swap')}
             </button>
           </div>
-        )}
-        {mod.catalogWith.length > 0 && (
-          <p className="alert info">
-            <Icon name="info" size={15} /> {t('mod.catalogWarn', { mods: mod.catalogWith.join(', ') })}
-          </p>
         )}
         {mod.compat.state === 'different' && (
           <p className="alert info">

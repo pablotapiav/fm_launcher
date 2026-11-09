@@ -124,10 +124,8 @@ describe('mods en archivos comprimidos', () => {
     expect(mod.files[0].target).toBe(`${ADDR}/adboards_assets_all.bundle`)
   })
 
-  it('detecta el conflicto entre un zip y un bundle suelto sobre el mismo archivo', async () => {
-    const zip = await makeZip('pack.zip', { 'p/fm_Data/StreamingAssets/AddrData/catalog_info.bin': 'M1' })
-    const loose = path.join(downloads, 'catalog_info.bin')
-    await writeFile(loose, 'unused')
+  it('detecta el conflicto entre dos packs que reemplazan el mismo archivo de contenido', async () => {
+    const zip = await makeZip('pack.zip', { 'p/fm_Data/StreamingAssets/AddrData/adboards_assets_all.bundle': 'M1' })
     const svc = await makeService()
     await svc.addPaths([zip])
     const state = await svc.getState()
@@ -135,7 +133,7 @@ describe('mods en archivos comprimidos', () => {
     await svc.activate(state.mods[0].id)
 
     // Otro pack que reemplaza el mismo archivo.
-    const zip2 = await makeZip('pack2.zip', { 'q/fm_Data/StreamingAssets/AddrData/catalog_info.bin': 'M2' })
+    const zip2 = await makeZip('pack2.zip', { 'q/fm_Data/StreamingAssets/AddrData/adboards_assets_all.bundle': 'M2' })
     await svc.addPaths([zip2])
     const second = (await svc.getState()).mods[1]
     await expect(svc.activate(second.id)).rejects.toMatchObject({

@@ -1,7 +1,7 @@
 import { readFile, rename } from 'node:fs/promises'
 import type { Lang, Library, Mod, Settings } from '../../shared/types'
 import { atomicWrite, key } from './fsutil'
-import { BUNDLE_DIR_REL } from './paths'
+import { BUNDLE_DIR_REL, isSharedTarget } from './paths'
 
 export function defaultLanguage(locale: string): Lang {
   return locale.toLowerCase().startsWith('en') ? 'en' : 'es'
@@ -18,7 +18,7 @@ export function defaultSettings(): Settings {
 }
 
 export function emptyLibrary(): Library {
-  return { version: 2, settings: defaultSettings(), mods: [], backups: {}, owners: {} }
+  return { version: 2, settings: defaultSettings(), mods: [], backups: {}, owners: {}, shared: {} }
 }
 
 /** La versión 1 guardaba solo el nombre del bundle (siempre en aa/StandaloneWindows64). */
@@ -58,13 +58,19 @@ export class LibraryStore {
       const parsed = JSON.parse(raw) as Partial<Library> & { version?: number }
       if (parsed.version !== 2) migrateV1(parsed)
       const base = emptyLibrary()
-      return {
+      const lib: Library = {
         version: 2,
         settings: { ...base.settings, ...(parsed.settings ?? {}) },
         mods: Array.isArray(parsed.mods) ? parsed.mods : [],
         backups: parsed.backups ?? {},
-        owners: parsed.owners ?? {}
+        owners: parsed.owners ?? {},
+        shared: parsed.shared ?? {}
       }
+      // Bibliotecas de la 0.1: los catálogos activados quedaron con un solo dueño. Pasan a ser una pila de una capa.
+      for (const [k, owner] of Object.entries(lib.owners)) {
+        if (isSharedTarget(k) && !lib.shared[k]) lib.shared[k] = [owner]
+      }
+      return lib
     } catch {
       // JSON dañado: se conserva una copia y se parte de cero.
       await rename(this.file, `${this.file}.corrupt-${Date.now()}`).catch(() => undefined)

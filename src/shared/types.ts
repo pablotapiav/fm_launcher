@@ -76,6 +76,11 @@ export interface Library {
   mods: Mod[]
   backups: Record<string, BackupRecord>
   owners: Record<string, OwnerRecord>
+  /**
+   * Archivos compartidos (catálogo): pila de mods activos sobre cada uno, en orden de activación.
+   * El último es el que está puesto en el juego; el respaldo guarda siempre el original.
+   */
+  shared: Record<string, OwnerRecord[]>
 }
 
 export interface GameInfo {
@@ -119,11 +124,6 @@ export interface ModView {
   conflictsWith: { id: string; name: string }[]
   /** Subconjunto de conflictsWith que está activo ahora mismo. */
   blockedBy: { id: string; name: string }[]
-  /**
-   * Si el mod trae su propio catálogo del juego: otros mods activos con los que podría no combinar
-   * aunque no compartan archivos.
-   */
-  catalogWith: string[]
   compat: ModCompat
 }
 

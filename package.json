@@ -1,0 +1,85 @@
+{
+  "name": "fm-launcher",
+  "version": "0.1.0",
+  "description": "Launcher para Football Manager 27: activa y desactiva mods que reemplazan bundles.",
+  "main": "./out/main/index.js",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "dist": "electron-vite build && electron-builder --win --x64",
+    "dist:dir": "electron-vite build && electron-builder --win --x64 --dir"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.2.1",
+    "adm-zip": "^0.6.1",
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0",
+    "electron-vite": "^6.0.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
+  },
+  "author": "FM Launcher contributors",
+  "build": {
+    "appId": "com.fmlauncher.app",
+    "productName": "FM Launcher",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/icon.png",
+      "signExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "icon": "build/icon.png",
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "FM Launcher",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "FM-Launcher-Setup-${version}.exe"
+    },
+    "portable": {
+      "artifactName": "FM-Launcher-${version}-portable.exe"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pablotapiav/fm_launcher.git"
+  },
+  "homepage": "https://github.com/pablotapiav/fm_launcher#readme",
+  "bugs": {
+    "url": "https://github.com/pablotapiav/fm_launcher/issues"
+  }
+}

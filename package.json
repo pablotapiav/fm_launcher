@@ -68,10 +68,10 @@
       "createStartMenuShortcut": true,
       "shortcutName": "FM Launcher",
       "deleteAppDataOnUninstall": false,
-      "artifactName": "FM-Launcher-Setup-${version}.exe"
+      "artifactName": "FM-Launcher-Setup.exe"
     },
     "portable": {
-      "artifactName": "FM-Launcher-${version}-portable.exe"
+      "artifactName": "FM-Launcher-portable.exe"
     }
   },
   "repository": {

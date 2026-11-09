@@ -14,11 +14,11 @@ Drag the `.zip` just as you downloaded it, flip the switch and play.
 
 ## Download
 
-1. Go to **[Releases → latest version](../../releases/latest)**.
-2. Download one of these files:
-   - **`FM-Launcher-Setup-x.y.z.exe`** (recommended): installs with one click and creates a shortcut.
-   - **`FM-Launcher-x.y.z-portable.exe`**: no installation; keep it anywhere and open it.
-3. Open it. You need **Windows 10 or 11 (64-bit)** and **FM27 on Steam**.
+[![Download FM Launcher for Windows](https://img.shields.io/badge/%E2%AC%87%20Download-FM%20Launcher%20for%20Windows-ff2fa0?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/pablotapiav/fm_launcher/releases/latest/download/FM-Launcher-Setup.exe)
+
+It installs with one click and creates a shortcut. You need **Windows 10 or 11 (64-bit)** and **FM27 on Steam**.
+
+Prefer the **portable** version (no installation) or older versions? → **[All releases](../../releases)**
 
 > **Windows may show a blue warning** ("Windows protected your PC"). That's normal for small programs
 > without a paid code-signing certificate. Click **More info → Run anyway**.

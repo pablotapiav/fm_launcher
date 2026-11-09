@@ -14,11 +14,11 @@ Arrastra el `.zip` tal como lo descargaste, enciende el interruptor y juega.
 
 ## Descargar
 
-1. Entra a **[Releases → última versión](../../releases/latest)**.
-2. Descarga uno de estos archivos:
-   - **`FM-Launcher-Setup-x.y.z.exe`** (recomendado): se instala con un clic y crea un acceso directo.
-   - **`FM-Launcher-x.y.z-portable.exe`**: no se instala; lo guardas donde quieras y lo abres.
-3. Ábrelo. Necesitas **Windows 10 u 11 (64 bits)** y **FM27 de Steam**.
+[![Descargar FM Launcher para Windows](https://img.shields.io/badge/%E2%AC%87%20Descargar-FM%20Launcher%20para%20Windows-ff2fa0?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/pablotapiav/fm_launcher/releases/latest/download/FM-Launcher-Setup.exe)
+
+Se instala con un clic y crea un acceso directo. Necesitas **Windows 10 u 11 (64 bits)** y **FM27 de Steam**.
+
+¿Prefieres la versión **portable** (sin instalar) o ver las versiones anteriores? → **[Todas las versiones](../../releases)**
 
 > **Windows puede mostrar un aviso azul** ("Windows protegió su PC"). Es normal en programas
 > pequeños sin certificado de firma de pago. Pulsa **Más información → Ejecutar de todos modos**.

@@ -11,8 +11,8 @@
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "dist": "electron-vite build && electron-builder --win --x64",
-    "dist:dir": "electron-vite build && electron-builder --win --x64 --dir"
+    "dist": "electron-vite build && electron-builder --win --x64 --publish never",
+    "dist:dir": "electron-vite build && electron-builder --win --x64 --dir --publish never"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.8",
